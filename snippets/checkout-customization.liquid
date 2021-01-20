@@ -1,0 +1,78 @@
+<style>
+    #tnc-text-wrapper {
+        border: 1px solid {{ settings.color_text_field_border }};
+        padding: 2px;
+    }
+    #tnc-text-wrapper textarea {
+        width: 100%;
+    }
+</style>
+
+
+<script>
+    (function($) {
+        $(document).on("page:load page:change", function() {
+            if (Shopify.Checkout.step === "contact_information") {
+                addTncText()
+                addTncCheckbox()
+                addFormSubmitEventHandler()
+            }
+        })
+
+
+        // add TnC text display
+        const addTncText = () => {
+            /** 
+             * 1) try select shipping address if it is a physical item in checkout
+             * 2) if it does not exist, try select billing address instead
+             */
+            let addressDiv =  $(`form div[data-shipping-address]`).length > 0 ? $(`form div[data-shipping-address]`) : $(`form div[data-billing-address]`)
+
+            let html = `
+                <br/>
+                <h2 class="section__title">Terms and Conditions</h2>
+                <br/>
+                <div id="tnc-text-wrapper">
+                    <textarea name="tnc-text" rows="8" col="50">{{ tnc_text }}</textarea>
+                </div>
+            `
+            addressDiv.after(html)
+
+        }
+
+        // add TnC checkbox HTML DOM
+        const addTncCheckbox = () => {
+            let tncTextDiv = $(`#tnc-text-wrapper`)
+            let html = `
+                <br/>
+                <div class="checkbox__input">
+                    <input class="input-checkbox" type="checkbox" name="checkout[attributes][buyer-accepts-tnc]" value="yes">
+                    <label>Agree to the Terms and Conditions above</label>
+                </div>
+                `
+            tncTextDiv.after(html)
+        }
+
+        // return whether T&C checked by user - true or false
+        const hasAgreedTnc = () => {
+            let checked = $(`input[name='checkout[attributes][buyer-accepts-tnc]']:checked`).val()
+            return checked ? true : false
+        }
+
+        // form submit event handler
+        const addFormSubmitEventHandler = () => {
+            let form = $(`form[data-customer-information-form="true"]`)
+            let submitButton = $(`form[data-customer-information-form="true"] button[type="submit"]`)
+            submitButton.on('click', (e)=> {
+                e.preventDefault()
+                if(hasAgreedTnc()) {
+                    form.submit()
+                } else {
+                    let errorMessage = `Please accept the Terms and Conditions before continuing`
+                    alert(errorMessage)
+                }
+            })
+        }
+
+    })(Checkout.$)
+</script>
